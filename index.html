@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- iOS Safari - Make UI completely black -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="theme-color" content="#000000">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+    </style>
+    
+    <title>ARK ETS2 Pro Dashboard</title>
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        html {
+            background: #000;
+            color-scheme: dark;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #141414 50%, #0f0f0f 100%);
+            font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            height: 100svh; /* Use svh if supported */
+            display: flex;
+            flex-direction: column;
+            /* iOS safe areas */
+            padding-top: max(env(safe-area-inset-top), 0px);
+            padding-bottom: max(env(safe-area-inset-bottom), 0px);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+        
+        /* Status Bar */
+        .status-bar {
+            padding: 8px 15px;
+            background: rgba(0, 0, 0, 0.98);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #222;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.8);
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.connected { background: #00ff00; box-shadow: 0 0 12px #00ff00; }
+        .status-dot.disconnected { background: #ff0000; box-shadow: 0 0 12px #ff0000; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.95); }
+        }
+        
+        .game-info {
+            font-size: 11px;
+            color: #00d4ff;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+        }
+        
+        /* Main Container */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 12px;
+            overflow: hidden;
+            min-height: 0;
+        }
+        
+        /* Warning Lights Grid */
+        .warning-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            padding: 8px;
+            background: rgba(10, 10, 10, 0.6);
+            border-radius: 12px;
+            border: 1px solid #1a1a1a;
+            flex-shrink: 0;
+            max-width: 100%;
+        }
+        
+        .warning-light {
+            aspect-ratio: 1;
+            background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+            border-radius: 10px;
+            border: 2px solid #222;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Desktop Optimization for 1080p and 1440p */
+        @media (min-width: 1024px) {
+            body {
+                padding: 0;
+                overflow: auto;
+            }
+            
+            .main-container {
+                max-width: 1600px;
+                margin: 0 auto;
+                gap: 20px;
+                padding: 20px;
+            }
+            
+            .warning-grid {
+                max-width: 800px;
+                margin: 0 auto;
+                gap: 12px;
+                padding: 15px;
+            }
+            
+            .warning-light {
+                max-width: 140px;
+                max-height: 140px;
+            }
+            
+            .warning-light svg {
+                width: 50%;
+                height: 50%;
+            }
+            
+            .warning-label {
+                font-size: 10px;
+            }
+        }
+        
+        /* 1440p and larger displays */
+        @media (min-width: 1920px) {
+            .warning-grid {
+                max-width: 900px;
+            }
+            
+            .warning-light {
+                max-width: 150px;
+                max-height: 150px;
+            }
+            
+            .warning-label {
+                font-size: 11px;
+            }
+        }
+        
+        .warning-light::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.4) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .warning-light.active::before {
+            opacity: 1;
+        }
+        
+        .warning-light svg {
+            width: 45%;
+            height: 45%;
+            transition: all 0.3s ease;
+        }
+        
+        /* Default icon colors */
+        .warning-light.parking-brake svg { color: #0066ff; }
+        .warning-light.low-fuel svg { color: #ff3300; }
+        .warning-light.hazard svg { color: #ffaa00; }
+        .warning-light.abs svg { color: #ff6600; }
+        .warning-light.tcs svg { color: #ffdd00; }
+        .warning-light.engine-brake svg { color: #888; }
+        .warning-light.trailer-brake svg { color: #999; }
+        .warning-light.rotating-beacon svg { color: #00ff00; }
+        .warning-light.diff-lock svg { color: #00ffff; }
+        
+        .warning-label {
+            font-size: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #666;
+            transition: color 0.3s, text-shadow 0.3s;
+        }
+        
+        /* Active States */
+        .warning-light.parking-brake.active {
+            background: linear-gradient(145deg, #0066ff, #0044cc);
+            border-color: #0088ff;
+            box-shadow: 0 0 12px rgba(0, 102, 255, 0.4), 0 0 20px rgba(0, 102, 255, 0.15), inset 0 0 15px rgba(0, 102, 255, 0.15);
+            animation: none;
+        }
+        
+        .warning-light.low-fuel.active {
+            background: linear-gradient(145deg, #ff3300, #cc0000);
+            border-color: #ff4400;
+            box-shadow: 0 0 12px rgba(255, 51, 0, 0.4), 0 0 20px rgba(255, 51, 0, 0.15), inset 0 0 15px rgba(255, 51, 0, 0.15);
+            animation: none;
+        }
+        
+        .warning-light.hazard.active {
+            background: linear-gradient(145deg, #ffaa00, #ff8800);
+            border-color: #ffbb00;
+            box-shadow: 0 0 12px rgba(255, 170, 0, 0.4), 0 0 20px rgba(255, 170, 0, 0.15), inset 0 0 15px rgba(255, 170, 0, 0.15);
+            animation: none;
+        }
+        
+        .warning-light.abs.active {
+            background: linear-gradient(145deg, #ff6600, #ee4400);
+            border-color: #ff7700;
+            box-shadow: 0 0 12px rgba(255, 102, 0, 0.4), 0 0 20px rgba(255, 102, 0, 0.15), inset 0 0 15px rgba(255, 102, 0, 0.15);
+            animation: none;
+        }
+        
+        .warning-light.tcs.active {
+            background: linear-gradient(145deg, #ffdd00, #ffaa00);
+            border-color: #ffee00;
+            box-shadow: 0 0 12px rgba(255, 221, 0, 0.4), 0 0 20px rgba(255, 221, 0, 0.15), inset 0 0 15px rgba(255, 221, 0, 0.15);
+            animation: none;
+        }
+        
+        .warning-light.engine-brake.active {
+            background: linear-gradient(145deg, #666, #444);
+            border-color: #888;
+            box-shadow: 0 0 12px rgba(150, 150, 150, 0.3), 0 0 20px rgba(150, 150, 150, 0.12), inset 0 0 15px rgba(150, 150, 150, 0.12);
+            animation: none;
+        }
+        
+        .warning-light.trailer-brake.active {
+            background: linear-gradient(145deg, #888, #555);
+            border-color: #999;
+            box-shadow: 0 0 12px rgba(150, 150, 150, 0.3), 0 0 20px rgba(150, 150, 150, 0.12), inset 0 0 15px rgba(150, 150, 150, 0.12);
+            animation: none;
+        }
+        
+        .warning-light.rotating-beacon.active {
+            background: linear-gradient(145deg, #00ff00, #00cc00);
+            border-color: #00ff44;
+            box-shadow: 0 0 12px rgba(0, 255, 0, 0.4), 0 0 20px rgba(0, 255, 0, 0.15), inset 0 0 15px rgba(0, 255, 0, 0.15);
+            animation: none;
+        }
+        
+        .warning-light.diff-lock.active {
+            background: linear-gradient(145deg, #00ffff, #00cccc);
+            border-color: #00ffee;
+            box-shadow: 0 0 12px rgba(0, 255, 255, 0.4), 0 0 20px rgba(0, 255, 255, 0.15), inset 0 0 15px rgba(0, 255, 255, 0.15);
+            animation: none;
+        }
+        
+        /* Gear Display - Normal state (cyan), Red at high RPM */
+        .warning-light.gear-display {
+            background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+            border-color: #2a2a2a;
+            box-shadow: 0 0 8px rgba(100, 100, 100, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .warning-light.gear-display svg {
+            color: #00d4ff;
+            transition: color 0.3s ease;
+        }
+        
+        /* High RPM (85-95%): Solid Red */
+        .warning-light.gear-display.shift-light {
+            background: linear-gradient(145deg, #ff0000, #cc0000);
+            border-color: #ff3300;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5), 0 0 25px rgba(255, 0, 0, 0.2), inset 0 0 15px rgba(255, 0, 0, 0.2);
+        }
+        
+        .warning-light.gear-display.shift-light svg {
+            color: #ffffff;
+        }
+        
+        /* Redline (>95%): Flashing Red */
+        .warning-light.gear-display.redline {
+            background: linear-gradient(145deg, #ff0000, #cc0000);
+            border-color: #ff3300;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.7), 0 0 35px rgba(255, 0, 0, 0.3), inset 0 0 20px rgba(255, 0, 0, 0.3);
+            animation: redline-flash 0.6s ease-in-out infinite; /* Slowed from 0.3s to 0.6s */
+        }
+        
+        .warning-light.gear-display.redline svg {
+            color: #ffffff;
+        }
+        
+        @keyframes redline-flash {
+            0%, 100% { 
+                opacity: 1;
+                box-shadow: 0 0 20px rgba(255, 0, 0, 0.7), 0 0 35px rgba(255, 0, 0, 0.3), inset 0 0 20px rgba(255, 0, 0, 0.3);
+            }
+            50% { 
+                opacity: 0.75;
+                box-shadow: 0 0 30px rgba(255, 0, 0, 0.9), 0 0 50px rgba(255, 0, 0, 0.5), inset 0 0 25px rgba(255, 0, 0, 0.4);
+            }
+        }
+        
+        .warning-light.gear-display .warning-label {
+            color: #00d4ff;
+            font-weight: 600;
+        }
+        
+        .warning-light.active .warning-label {
+            color: #fff;
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.9), 0 1px 3px rgba(0, 0, 0, 1), 0 0 12px rgba(255, 255, 255, 0.6);
+            font-weight: 700;
+        }
+        
+        .warning-light.active svg {
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 1)) drop-shadow(0 0 20px currentColor);
+            color: #fff;
+        }
+        
+        /* Middle Section */
+        .middle-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
+        }
+        
+        /* Steering Container */
+        .steering-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Turn Signals - Sequential CSS Animation */
+        .turn-signals {
+            display: flex;
+            gap: 40px; /* Increased spacing between left and right groups */
+            align-items: center;
+        }
+        
+        .turn-signal {
+            display: flex;
+            gap: 4px; /* Back to original tight spacing between individual bars */
+            align-items: center;
+            position: relative;
+        }
+        
+        /* Triangle arrow on outermost end of left signal */
+        .turn-signal.left::before {
+            content: '';
+            width: 0;
+            height: 0;
+            border-top: 17.5px solid transparent;
+            border-bottom: 17.5px solid transparent;
+            border-right: 12px solid #222;
+            margin-right: 4px;
+            transition: all 0.15s ease;
+            filter: drop-shadow(0 0 0 transparent);
+        }
+        
+        .turn-signal.left.active::before {
+            animation: sequential-left-arrow 0.9s infinite;
+            animation-delay: 0.9s; /* Last in sequence */
+        }
+        
+        /* Triangle arrow on outermost end of right signal */
+        .turn-signal.right::after {
+            content: '';
+            width: 0;
+            height: 0;
+            border-top: 17.5px solid transparent;
+            border-bottom: 17.5px solid transparent;
+            border-left: 12px solid #222;
+            margin-left: 4px;
+            transition: all 0.15s ease;
+            filter: drop-shadow(0 0 0 transparent);
+        }
+        
+        .turn-signal.right.active::after {
+            animation: sequential-right-arrow 0.9s infinite;
+            animation-delay: 0.9s; /* Last in sequence */
+        }
+        
+        .turn-segment {
+            width: 12px;
+            height: 35px;
+            background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+            border-radius: 6px;
+            border: 2px solid #222;
+            transition: all 0.15s ease;
+        }
+        
+        /* Left Turn Signal Sequential Animation - FLIPPED (6 segments) */
+        .turn-signal.left.active .turn-segment:nth-child(6) {
+            animation: sequential-left 0.9s infinite;
+            animation-delay: 0s;
+        }
+        
+        .turn-signal.left.active .turn-segment:nth-child(5) {
+            animation: sequential-left 0.9s infinite;
+            animation-delay: 0.15s;
+        }
+        
+        .turn-signal.left.active .turn-segment:nth-child(4) {
+            animation: sequential-left 0.9s infinite;
+            animation-delay: 0.3s;
+        }
+        
+        .turn-signal.left.active .turn-segment:nth-child(3) {
+            animation: sequential-left 0.9s infinite;
+            animation-delay: 0.45s;
+        }
+        
+        .turn-signal.left.active .turn-segment:nth-child(2) {
+            animation: sequential-left 0.9s infinite;
+            animation-delay: 0.6s;
+        }
+        
+        .turn-signal.left.active .turn-segment:nth-child(1) {
+            animation: sequential-left 0.9s infinite;
+            animation-delay: 0.75s;
+        }
+        
+        /* Right Turn Signal Sequential Animation - FLIPPED (6 segments) */
+        .turn-signal.right.active .turn-segment:nth-child(1) {
+            animation: sequential-right 0.9s infinite;
+            animation-delay: 0s;
+        }
+        
+        .turn-signal.right.active .turn-segment:nth-child(2) {
+            animation: sequential-right 0.9s infinite;
+            animation-delay: 0.15s;
+        }
+        
+        .turn-signal.right.active .turn-segment:nth-child(3) {
+            animation: sequential-right 0.9s infinite;
+            animation-delay: 0.3s;
+        }
+        
+        .turn-signal.right.active .turn-segment:nth-child(4) {
+            animation: sequential-right 0.9s infinite;
+            animation-delay: 0.45s;
+        }
+        
+        .turn-signal.right.active .turn-segment:nth-child(5) {
+            animation: sequential-right 0.9s infinite;
+            animation-delay: 0.6s;
+        }
+        
+        .turn-signal.right.active .turn-segment:nth-child(6) {
+            animation: sequential-right 0.9s infinite;
+            animation-delay: 0.75s;
+        }
+        
+        @keyframes sequential-left {
+            0%, 100% {
+                background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+                border-color: #222;
+                box-shadow: none;
+            }
+            50% {
+                background: linear-gradient(145deg, #00ff00, #00cc00);
+                border-color: #00ff44;
+                box-shadow: 0 0 20px rgba(0, 255, 0, 0.8), 0 0 40px rgba(0, 255, 0, 0.4), inset 0 0 15px rgba(0, 255, 0, 0.3);
+            }
+        }
+        
+        @keyframes sequential-right {
+            0%, 100% {
+                background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+                border-color: #222;
+                box-shadow: none;
+            }
+            50% {
+                background: linear-gradient(145deg, #00ff00, #00cc00);
+                border-color: #00ff44;
+                box-shadow: 0 0 20px rgba(0, 255, 0, 0.8), 0 0 40px rgba(0, 255, 0, 0.4), inset 0 0 15px rgba(0, 255, 0, 0.3);
+            }
+        }
+        
+        /* Triangle arrow animations - uses border-color instead of background */
+        @keyframes sequential-left-arrow {
+            0%, 100% {
+                border-right-color: #222;
+                filter: drop-shadow(0 0 0 transparent);
+            }
+            50% {
+                border-right-color: #00ff00;
+                filter: drop-shadow(0 0 12px rgba(0, 255, 0, 0.8)) drop-shadow(0 0 25px rgba(0, 255, 0, 0.4));
+            }
+        }
+        
+        @keyframes sequential-right-arrow {
+            0%, 100% {
+                border-left-color: #222;
+                filter: drop-shadow(0 0 0 transparent);
+            }
+            50% {
+                border-left-color: #00ff00;
+                filter: drop-shadow(0 0 12px rgba(0, 255, 0, 0.8)) drop-shadow(0 0 25px rgba(0, 255, 0, 0.4));
+            }
+        }
+        
+        /* Steering Wheel */
+        .steering-wheel-wrapper {
+            position: relative;
+            width: 200px;
+            height: 120px;
+            overflow: visible;
+            margin: 15px 0;
+        }
+        
+        .steering-wheel {
+            width: 200px;
+            height: 100px;
+            background: radial-gradient(ellipse at 50% 100%, #2a2a2a 0%, #1a1a1a 50%, #0f0f0f 100%);
+            border: 6px solid #3a3a3a;
+            border-bottom: none;
+            border-radius: 200px 200px 0 0;
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.8), inset 0 0 35px rgba(255, 255, 255, 0.03);
+        }
+        
+        .steering-center {
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #4a4a4a, #2a2a2a);
+            border-radius: 50%;
+            border: 3px solid #5a5a5a;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.9), inset 0 2px 8px rgba(255, 255, 255, 0.15);
+            z-index: 10;
+        }
+        
+        .steering-indicator {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            width: 6px;
+            height: 85px;
+            background: linear-gradient(180deg, #00d4ff 0%, #0066cc 100%);
+            border-radius: 3px;
+            transform-origin: 50% 100%;
+            transform: translateX(-50%) rotate(0deg);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.9), 0 0 40px rgba(0, 212, 255, 0.4);
+            z-index: 5;
+            transition: transform 0.15s cubic-bezier(0.4, 0.0, 0.2, 1); /* Smoother trailing effect */
+        }
+        
+        /* Add motion blur effect when steering moves fast */
+        .steering-indicator::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: inherit;
+            border-radius: inherit;
+            opacity: 0.3;
+            filter: blur(8px);
+            z-index: -1;
+        }
+        
+        .steering-angle {
+            font-size: 28px;
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+            color: #00d4ff;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5), 0 2px 4px rgba(0, 0, 0, 0.5);
+            margin-top: 8px;
+            letter-spacing: 1px;
+        }
+        
+        .steering-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        /* Input Bars - Compact Responsive Design */
+        .input-bars-container {
+            width: 100%;
+            max-width: 550px;
+            margin: 0 auto;
+        }
+        
+        .input-bars {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .input-bar {
+            background: rgba(10, 10, 10, 0.9);
+            border-radius: 10px;
+            padding: 10px 12px;
+            border: 2px solid #1a1a1a;
+            transition: all 0.2s ease;
+        }
+        
+        .input-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-align: center;
+            transition: color 0.2s;
+        }
+        
+        .throttle-bar .input-label { color: #00dd00; }
+        .brake-bar .input-label { color: #ff3333; }
+        .clutch-bar .input-label { color: #ffaa00; }
+        
+        .input-progress {
+            height: 28px;
+            background: #050505;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #1a1a1a;
+            position: relative;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+        }
+        
+        .input-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.1s linear;
+            position: relative;
+            animation: pulse-bar 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-bar {
+            0%, 100% { 
+                filter: brightness(1);
+            }
+            50% { 
+                filter: brightness(1.15);
+            }
+        }
+        
+        /* Shine effect */
+        .input-fill::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.3) 50%, 
+                transparent 100%);
+            animation: shine 3s ease-in-out infinite;
+        }
+        
+        @keyframes shine {
+            0% { left: -100%; }
+            20% { left: 100%; }
+            100% { left: 100%; }
+        }
+        
+        .throttle-bar .input-fill {
+            background: linear-gradient(90deg, #00ff00, #00dd00, #00ff00);
+            background-size: 200% 100%;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            animation: pulse-bar 2s ease-in-out infinite, gradient-shift 3s linear infinite;
+        }
+        
+        .brake-bar .input-fill {
+            background: linear-gradient(90deg, #ff0000, #dd0000, #ff0000);
+            background-size: 200% 100%;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            animation: pulse-bar 2s ease-in-out infinite, gradient-shift 3s linear infinite;
+        }
+        
+        .clutch-bar .input-fill {
+            background: linear-gradient(90deg, #ffaa00, #ff8800, #ffaa00);
+            background-size: 200% 100%;
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            animation: pulse-bar 2s ease-in-out infinite, gradient-shift 3s linear infinite;
+        }
+        
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .input-percentage {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 
+                0 0 4px rgba(0, 0, 0, 1),
+                0 1px 3px rgba(0, 0, 0, 0.9);
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        /* Job Panel - Bottom */
+        .job-panel {
+            background: rgba(10, 10, 10, 0.9);
+            border-radius: 12px;
+            padding: 12px 14px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            border: 1px solid #1a1a1a;
+            flex-shrink: 0;
+        }
+        
+        .job-section {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .job-heading {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #888;
+            font-weight: 700;
+        }
+        
+        .job-value {
+            font-size: 17px;
+            font-weight: 700;
+            color: #00d4ff;
+            letter-spacing: 0.5px;
+            line-height: 1.2;
+        }
+        
+        .job-subvalue {
+            font-size: 13px;
+            color: #aaa;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+        
+        /* Safari/WebKit specific fixes */
+        @supports (-webkit-touch-callout: none) {
+            .input-fill {
+                -webkit-transform: translateZ(0);
+                transform: translateZ(0);
+            }
+        }
+        
+        /* Mobile Responsive - iPhone 14 Pro Max */
+        @media (max-width: 430px) {
+            .status-bar {
+                padding: 6px 12px;
+            }
+            
+            .status-indicator {
+                font-size: 10px;
+                gap: 6px;
+            }
+            
+            .status-dot {
+                width: 8px;
+                height: 8px;
+            }
+            
+            .game-info {
+                font-size: 9px;
+            }
+            
+            .main-container {
+                gap: 6px;
+                padding: 6px;
+                min-height: 0;
+            }
+            
+            /* Warning Grid - Larger for Touch */
+            .warning-grid {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 5px;
+                padding: 6px;
+            }
+            
+            .warning-light {
+                border-width: 1.5px;
+            }
+            
+            .warning-light svg {
+                width: 50%;
+                height: 50%;
+            }
+            
+            .warning-label {
+                font-size: 7px;
+            }
+            
+            /* Middle Section - Keep vertical on mobile */
+            .middle-section {
+                gap: 5px;
+            }
+            
+            /* Steering Wheel */
+            .steering-wheel-wrapper {
+                width: 120px;
+                height: 75px;
+                margin: 8px 0;
+            }
+            
+            .steering-wheel {
+                width: 120px;
+                height: 60px;
+                border-width: 4px;
+                border-radius: 120px 120px 0 0;
+            }
+            
+            .steering-center {
+                width: 24px;
+                height: 24px;
+                border-width: 2px;
+            }
+            
+            .steering-indicator {
+                width: 4px;
+                height: 50px;
+            }
+            
+            .steering-angle {
+                font-size: 18px;
+                margin-top: 4px;
+            }
+            
+            .steering-label {
+                font-size: 9px;
+            }
+            
+            /* Input Bars Container - Stack vertically on mobile */
+            .input-bars-container {
+                max-width: 100%;
+            }
+            
+            .input-bars {
+                gap: 5px;
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+            }
+            
+            .input-bar {
+                padding: 6px 10px;
+                border-width: 2px;
+            }
+            
+            .input-label {
+                font-size: 9px;
+                margin-bottom: 5px;
+            }
+            
+            .input-progress {
+                height: 22px;
+            }
+            
+            .input-percentage {
+                font-size: 10px;
+            }
+            
+            /* Turn Signals */
+            .turn-signals {
+                gap: 10px;
+            }
+            
+            .turn-segment {
+                width: 9px;
+                height: 26px;
+            }
+            
+            /* Job Panel */
+            .job-panel {
+                padding: 8px 10px;
+                gap: 10px;
+                grid-template-columns: 1fr 1fr;
+                margin-bottom: max(env(safe-area-inset-bottom), 6px);
+            }
+            
+            .job-heading {
+                font-size: 8px;
+                letter-spacing: 1.5px;
+            }
+            
+            .job-value {
+                font-size: 13px;
+                font-weight: 700;
+            }
+            
+            .job-subvalue {
+                font-size: 10px;
+                font-weight: 500;
+            }
+        }
+        
+        /* ═══════════════════════════════════════════════════════════════ */
+        /* DESKTOP OPTIMIZATION - 1080p & 1440p                            */
+        /* ═══════════════════════════════════════════════════════════════ */
+        
+        @media (min-width: 1024px) and (min-height: 768px) {
+            body {
+                overflow: auto;
+                padding: 20px;
+            }
+            
+            .main-container {
+                max-width: 1400px;
+                margin: 0 auto;
+                gap: 20px;
+                padding: 0;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: flex-start;
+            }
+            
+            /* Make warning lights smaller and constrained */
+            .warning-grid {
+                order: 1;
+                max-width: 700px;
+                width: 100%;
+                gap: 10px;
+                padding: 12px;
+            }
+            
+            .warning-light {
+                max-width: 120px;
+                max-height: 120px;
+            }
+            
+            .warning-light svg {
+                width: 48%;
+                height: 48%;
+            }
+            
+            .warning-label {
+                font-size: 9px;
+            }
+            
+            /* Middle section (steering + turn signals) */
+            .middle-section {
+                order: 2;
+                flex: 0 1 auto;
+                max-width: 500px;
+                width: 100%;
+                gap: 15px;
+            }
+            
+            .steering-wheel-wrapper {
+                width: 180px;
+                height: 110px;
+            }
+            
+            .steering-wheel {
+                width: 180px;
+                height: 90px;
+                border-width: 6px;
+            }
+            
+            .steering-center {
+                width: 32px;
+                height: 32px;
+            }
+            
+            .steering-indicator {
+                width: 5px;
+                height: 70px;
+            }
+            
+            .steering-angle {
+                font-size: 24px;
+            }
+            
+            .turn-segment {
+                width: 14px;
+                height: 40px;
+            }
+            
+            .turn-signal.left::before,
+            .turn-signal.right::after {
+                border-top-width: 20px;
+                border-bottom-width: 20px;
+                border-left-width: 14px;
+                border-right-width: 14px;
+            }
+            
+            /* Input bars */
+            .input-bars-container {
+                order: 3;
+                max-width: 700px;
+                width: 100%;
+            }
+            
+            .input-bars {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+            }
+            
+            .input-bar {
+                height: 50px;
+            }
+            
+            .bar-label {
+                font-size: 11px;
+            }
+            
+            .bar-percent {
+                font-size: 16px;
+            }
+            
+            /* Job panel */
+            .job-panel {
+                order: 4;
+                max-width: 700px;
+                width: 100%;
+                padding: 15px;
+            }
+            
+            .job-heading {
+                font-size: 10px;
+            }
+            
+            .job-value {
+                font-size: 16px;
+            }
+            
+            .job-subvalue {
+                font-size: 12px;
+            }
+        }
+        
+        /* Extra large displays (1440p and up) */
+        @media (min-width: 1920px) and (min-height: 1080px) {
+            .main-container {
+                max-width: 1600px;
+            }
+            
+            .warning-grid {
+                max-width: 800px;
+            }
+            
+            .warning-light {
+                max-width: 140px;
+                max-height: 140px;
+            }
+            
+            .warning-label {
+                font-size: 10px;
+            }
+            
+            .middle-section {
+                max-width: 600px;
+            }
+            
+            .steering-wheel-wrapper {
+                width: 200px;
+                height: 120px;
+            }
+            
+            .steering-wheel {
+                width: 200px;
+                height: 100px;
+            }
+            
+            .turn-segment {
+                width: 16px;
+                height: 45px;
+            }
+            
+            .input-bars-container,
+            .job-panel {
+                max-width: 800px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-indicator">
+            <div class="status-dot connected" id="status-dot"></div>
+            <span id="connection-status">Connected</span>
+        </div>
+        <div class="game-info" id="game-name">ETS2 | LOADING...</div>
+    </div>
+    
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Warning Lights Grid -->
+        <div class="warning-grid">
+            <div class="warning-light parking-brake" id="parking-brake">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <!-- Parking brake lever -->
+                    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.5"/>
+                    <path d="M12,5 L12,13 M12,13 L9,10 M12,13 L15,10" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    <text x="12" y="19" font-size="6" font-weight="bold" text-anchor="middle" fill="currentColor">PARK</text>
+                </svg>
+                <div class="warning-label">Parking</div>
+            </div>
+            
+            <div class="warning-light low-fuel" id="low-fuel">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <!-- Fuel pump/tank icon -->
+                    <path d="M6,3 L6,17 L14,17 L14,8 L18,8 L18,14 C18,15 19,16 20,16 C21,16 22,15 22,14 L22,8 L20,6 M8,5 L12,5 L12,10 L8,10 Z" fill="currentColor"/>
+                    <rect x="7" y="18" width="6" height="2" fill="currentColor"/>
+                    <path d="M19,9 L19,13" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                </svg>
+                <div class="warning-label">Fuel</div>
+            </div>
+            
+            <div class="warning-light gear-display" id="gear-display">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <text x="12" y="16" font-size="15" font-weight="900" text-anchor="middle" fill="currentColor" font-family="Orbitron, monospace" id="gear-text">N</text>
+                </svg>
+                <div class="warning-label">Gear</div>
+            </div>
+            
+            <div class="warning-light abs" id="abs">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <!-- ABS brake disc with caliper -->
+                    <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M12,4 L12,8 M12,16 L12,20 M4,12 L8,12 M16,12 L20,12" stroke="currentColor" stroke-width="1.5"/>
+                    <text x="12" y="14" font-size="5" font-weight="bold" text-anchor="middle" fill="currentColor">ABS</text>
+                </svg>
+                <div class="warning-label">ABS</div>
+            </div>
+            
+            <div class="warning-light tcs" id="tcs">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <!-- Traction control - wheel with slip marks -->
+                    <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12,5 L12,12 L17,12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M19,8 L22,8 M19,12 L23,12 M19,16 L22,16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                </svg>
+                <div class="warning-label">TCS</div>
+            </div>
+            
+            <div class="warning-light engine-brake" id="engine-brake">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <!-- Engine brake - engine with brake symbol -->
+                    <rect x="6" y="8" width="12" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8,8 L8,5 L10,5 M12,8 L12,4 L12,4 M16,8 L16,5 L14,5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <circle cx="10" cy="13" r="1.5" fill="currentColor"/>
+                    <circle cx="14" cy="13" r="1.5" fill="currentColor"/>
+                    <path d="M10,18 L10,20 M14,18 L14,20" stroke="currentColor" stroke-width="1.5"/>
+                    <text x="12" y="15" font-size="4" font-weight="bold" text-anchor="middle" fill="currentColor">EB</text>
+                </svg>
+                <div class="warning-label">Engine</div>
+            </div>
+            
+            <div class="warning-light trailer-brake" id="trailer-brake">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <!-- Trailer with emphasized brakes -->
+                    <rect x="4" y="9" width="14" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M18,11 L22,11 L22,14 L20,14" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <circle cx="8" cy="17" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                    <circle cx="14" cy="17" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                    <circle cx="8" cy="17" r="1" fill="currentColor"/>
+                    <circle cx="14" cy="17" r="1" fill="currentColor"/>
+                    <path d="M10,12 L14,12" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <div class="warning-label">Trailer</div>
+            </div>
+            
+            <div class="warning-light rotating-beacon" id="rotating-beacon">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <!-- Rotating beacon light -->
+                    <ellipse cx="12" cy="14" rx="6" ry="3" fill="currentColor" opacity="0.3"/>
+                    <path d="M8,14 L8,10 C8,8 10,7 12,7 C14,7 16,8 16,10 L16,14" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <path d="M10,7 L10,5 L14,5 L14,7" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M6,10 L4,8 M18,10 L20,8 M12,7 L12,4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    <ellipse cx="12" cy="10" rx="3" ry="2" fill="currentColor" opacity="0.5"/>
+                </svg>
+                <div class="warning-label">Beacon</div>
+            </div>
+            
+            <div class="warning-light diff-lock" id="diff-lock">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <!-- Differential lock - axle with lock -->
+                    <path d="M4,12 L20,12" stroke="currentColor" stroke-width="2.5"/>
+                    <circle cx="7" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="17" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <rect x="10" y="9" width="4" height="6" rx="0.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                    <circle cx="12" cy="12" r="1.2" fill="currentColor"/>
+                    <path d="M12,10.5 L12,9" stroke="currentColor" stroke-width="1.2"/>
+                </svg>
+                <div class="warning-label">Diff</div>
+            </div>
+            
+            <div class="warning-light hazard" id="hazard">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <!-- Hazard triangle -->
+                    <path d="M12,3 L22,20 L2,20 Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+                    <path d="M12,9 L12,14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="12" cy="17" r="1" fill="currentColor"/>
+                </svg>
+                <div class="warning-label">Hazard</div>
+            </div>
+        </div>
+        
+        <!-- Middle Section -->
+        <div class="middle-section">
+            <!-- Center Steering -->
+            <div class="steering-container">
+                <div class="turn-signals">
+                    <div class="turn-signal left" id="turn-left">
+                        <div class="turn-segment"></div>
+                        <div class="turn-segment"></div>
+                        <div class="turn-segment"></div>
+                        <div class="turn-segment"></div>
+                        <div class="turn-segment"></div>
+                        <div class="turn-segment"></div>
+                    </div>
+                    
+                    <div class="turn-signal right" id="turn-right">
+                        <div class="turn-segment"></div>
+                        <div class="turn-segment"></div>
+                        <div class="turn-segment"></div>
+                        <div class="turn-segment"></div>
+                        <div class="turn-segment"></div>
+                        <div class="turn-segment"></div>
+                    </div>
+                </div>
+                
+                <div class="steering-wheel-wrapper">
+                    <div class="steering-wheel"></div>
+                    <div class="steering-center"></div>
+                    <div class="steering-indicator" id="steering-indicator"></div>
+                </div>
+                
+                <div class="steering-angle" id="steering-angle">0°</div>
+                <div class="steering-label">Steering Wheel</div>
+            </div>
+            
+            <!-- Input Bars Below Wheel -->
+            <div class="input-bars-container">
+                <div class="input-bars">
+                    <div class="input-bar throttle-bar">
+                        <div class="input-label">Throttle</div>
+                        <div class="input-progress">
+                            <div class="input-fill" id="throttle-fill" style="width: 0%"></div>
+                            <div class="input-percentage" id="throttle-percent">0%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="input-bar brake-bar">
+                        <div class="input-label">Brake</div>
+                        <div class="input-progress">
+                            <div class="input-fill" id="brake-fill" style="width: 0%"></div>
+                            <div class="input-percentage" id="brake-percent">0%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="input-bar clutch-bar">
+                        <div class="input-label">Clutch</div>
+                        <div class="input-progress">
+                            <div class="input-fill" id="clutch-fill" style="width: 0%"></div>
+                            <div class="input-percentage" id="clutch-percent">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Job Panel Bottom -->
+        <div class="job-panel">
+            <div class="job-section">
+                <div class="job-heading">From</div>
+                <div class="job-value" id="job-from">-</div>
+                <div class="job-subvalue">Cargo: <span id="job-cargo">-</span></div>
+            </div>
+            <div class="job-section">
+                <div class="job-heading">To</div>
+                <div class="job-value" id="job-to">-</div>
+                <div class="job-subvalue">Weight: <span id="job-weight">-</span></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let ws;
+        let reconnectInterval;
+        
+        function connect() {
+            ws = new WebSocket(`ws://${window.location.hostname}:8080`);
+            
+            ws.onopen = () => {
+                console.log('Connected to telemetry server');
+                updateConnectionStatus(true);
+                if (reconnectInterval) {
+                    clearInterval(reconnectInterval);
+                    reconnectInterval = null;
+                }
+            };
+            
+            ws.onclose = () => {
+                console.log('Disconnected from server');
+                updateConnectionStatus(false);
+                if (!reconnectInterval) {
+                    reconnectInterval = setInterval(() => {
+                        console.log('Attempting to reconnect...');
+                        connect();
+                    }, 3000);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('Received data:', data); // Debug log
+                    updateDashboard(data);
+                } catch (error) {
+                    console.error('Error parsing data:', error);
+                }
+            };
+        }
+        
+        function updateConnectionStatus(connected) {
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('connection-status');
+            
+            if (connected) {
+                statusDot.classList.remove('disconnected');
+                statusDot.classList.add('connected');
+                statusText.textContent = 'Connected';
+            } else {
+                statusDot.classList.remove('connected');
+                statusDot.classList.add('disconnected');
+                statusText.textContent = 'Disconnected';
+            }
+        }
+        
+        function updateDashboard(data) {
+            if (!data) return;
+            
+            // Game Name
+            const gameName = data.game?.gameName || 'ETS2';
+            const make = data.truck?.make || '';
+            document.getElementById('game-name').textContent = `${gameName.toUpperCase()}${make ? ' | ' + make.toUpperCase() : ''}`;
+            
+            // Warning Lights - Using WORKING properties from old version
+            updateWarningLight('parking-brake', data.truck?.parkBrakeOn || false);
+            updateWarningLight('low-fuel', data.truck?.fuelWarningOn || false);
+            
+            // Hazard Lights - Active when both blinkers are ON (not active state)
+            const hazardActive = data.truck?.blinkerLeftOn && data.truck?.blinkerRightOn;
+            updateWarningLight('hazard', hazardActive);
+            
+            // ABS: Active when brake > 50%, speed > 30 km/h, air pressure > 65 PSI
+            const truckSpeed = (data.truck?.speed || 0) * 3.6; // m/s to km/h
+            const absActive = (data.truck?.gameBrake || 0) > 0.5 && 
+                             truckSpeed > 30 && 
+                             (data.truck?.airPressure || 0) > 65;
+            updateWarningLight('abs', absActive);
+            
+            // TCS: Active when throttle > 60%, speed < 50 km/h, RPM > 70% max
+            const rpmPercent = (data.truck?.engineRpm || 0) / (data.truck?.engineRpmMax || 1);
+            const tcsActive = (data.truck?.gameThrottle || 0) > 0.6 && 
+                             truckSpeed < 50 && 
+                             rpmPercent > 0.7 && 
+                             (data.truck?.gear || 0) > 0;
+            updateWarningLight('tcs', tcsActive);
+            
+            // Engine brake (motor brake OR retarder)
+            const engineBrakeActive = data.truck?.motorBrakeOn || 
+                (data.truck?.retarderBrake && data.truck?.retarderBrake > 0);
+            updateWarningLight('engine-brake', engineBrakeActive);
+            
+            // Trailer brake - when braking with trailer attached
+            const trailerBrakeActive = data.trailer?.attached && 
+                (data.truck?.lightsBrakeOn || (data.truck?.gameBrake || 0) > 0);
+            updateWarningLight('trailer-brake', trailerBrakeActive);
+            
+            updateWarningLight('rotating-beacon', data.truck?.lightsBeaconOn || false);
+            
+            // Differential lock - check multiple property names (Funbit API variations)
+            const diffLock = data.truck?.differentialLockOn || 
+                           data.truck?.differentialLock || 
+                           data.truck?.diffLock || 
+                           false;
+            
+            // Debug: Log diff lock state (remove after testing)
+            if (data.truck?.differentialLockOn !== undefined || 
+                data.truck?.differentialLock !== undefined || 
+                data.truck?.diffLock !== undefined) {
+                console.log('Diff Lock Debug:', {
+                    differentialLockOn: data.truck?.differentialLockOn,
+                    differentialLock: data.truck?.differentialLock,
+                    diffLock: data.truck?.diffLock,
+                    finalValue: diffLock
+                });
+            }
+            
+            updateWarningLight('diff-lock', diffLock);
+            
+            // Turn Signals - Hazard mode shows both sides together
+            const leftBlinker = data.truck?.blinkerLeftActive || false;
+            const rightBlinker = data.truck?.blinkerRightActive || false;
+            const leftOn = data.truck?.blinkerLeftOn || false;
+            const rightOn = data.truck?.blinkerRightOn || false;
+            
+            // Check if hazard lights are ON (both switches ON)
+            const hazardOn = leftOn && rightOn;
+            
+            if (hazardOn) {
+                // Hazard mode: Both sides blink together - use leftBlinker as master
+                document.getElementById('turn-left').classList.toggle('active', leftBlinker);
+                document.getElementById('turn-right').classList.toggle('active', leftBlinker);
+            } else {
+                // Normal mode: each side shows only when its own blinker is active
+                document.getElementById('turn-left').classList.toggle('active', leftBlinker);
+                document.getElementById('turn-right').classList.toggle('active', rightBlinker);
+            }
+            
+            // Steering Wheel - FLIP AXIS (multiply by -1) and use gameSteer
+            const steeringRaw = (data.truck?.gameSteer || 0) * -1; // FLIPPED
+            const steeringAngle = Math.round(steeringRaw * 180);
+            
+            // Clamp to ±90° for semicircle range (180° total)
+            const clampedAngle = Math.max(-90, Math.min(90, steeringAngle));
+            
+            // Format steering display as "LEFT 45°" or "RIGHT 30°" or "CENTER"
+            let steeringDisplay;
+            if (Math.abs(steeringAngle) < 5) {
+                steeringDisplay = 'CENTER';
+            } else if (steeringAngle < 0) {
+                steeringDisplay = `LEFT ${Math.abs(steeringAngle)}°`;
+            } else {
+                steeringDisplay = `RIGHT ${steeringAngle}°`;
+            }
+            
+            document.getElementById('steering-angle').textContent = steeringDisplay;
+            document.getElementById('steering-indicator').style.transform = `translateX(-50%) rotate(${clampedAngle}deg)`;
+            
+            // Input Bars - use gameThrottle, gameBrake, gameClutch
+            const throttle = (data.truck?.gameThrottle || 0) * 100;
+            const brake = (data.truck?.gameBrake || 0) * 100;
+            const clutch = (data.truck?.gameClutch || 0) * 100;
+            
+            // Update bar fills (horizontal on all devices)
+            document.getElementById('throttle-fill').style.width = throttle + '%';
+            document.getElementById('throttle-percent').textContent = Math.round(throttle) + '%';
+            
+            document.getElementById('brake-fill').style.width = brake + '%';
+            document.getElementById('brake-percent').textContent = Math.round(brake) + '%';
+            
+            document.getElementById('clutch-fill').style.width = clutch + '%';
+            document.getElementById('clutch-percent').textContent = Math.round(clutch) + '%';
+            
+            // Gear Display with Progressive Shift Light
+            const gear = data.truck?.displayedGear || 0;
+            const rpm = data.truck?.engineRpm || 0;
+            const maxRpm = data.truck?.engineRpmMax || 1;
+            const rpmPercentage = (rpm / maxRpm) * 100;
+            
+            let gearText = 'N';
+            if (gear < 0) {
+                gearText = 'R';
+            } else if (gear > 0) {
+                gearText = gear.toString();
+            }
+            document.getElementById('gear-text').textContent = gearText;
+            
+            // Progressive shift light logic for trucks:
+            // 92-97% RPM: Solid Red (approaching redline)
+            // >97% RPM: Flashing Red (at redline - shift NOW!)
+            const gearDisplay = document.getElementById('gear-display');
+            if (gear > 0) {
+                if (rpmPercentage > 97) {
+                    // Redline: Flashing red
+                    gearDisplay.classList.remove('shift-light');
+                    gearDisplay.classList.add('redline');
+                } else if (rpmPercentage > 92) {
+                    // High RPM: Solid red
+                    gearDisplay.classList.add('shift-light');
+                    gearDisplay.classList.remove('redline');
+                } else {
+                    // Normal: Cyan
+                    gearDisplay.classList.remove('shift-light', 'redline');
+                }
+            } else {
+                // Neutral or Reverse: Always cyan
+                gearDisplay.classList.remove('shift-light', 'redline');
+            }
+            
+            // Job Information
+            const job = data.job || {};
+            const trailer = data.trailer || {};
+            
+            document.getElementById('job-from').textContent = job.sourceCity || '-';
+            document.getElementById('job-to').textContent = job.destinationCity || '-';
+            document.getElementById('job-cargo').textContent = job.cargo || trailer.name || '-';
+            
+            const weight = job.mass || trailer.mass || 0;
+            document.getElementById('job-weight').textContent = weight > 0 ? `${(weight / 1000).toFixed(1)} t` : '-';
+        }
+        
+        function updateWarningLight(id, active) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.classList.toggle('active', active);
+            }
+        }
+        
+        // Initial connection
+        connect();
+        
+        // Handle window resize for input bars
+        window.addEventListener('resize', () => {
+            // Force update on resize
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                // Will be updated on next data receive
+            }
+        });
+    </script>
+</body>
+</html>

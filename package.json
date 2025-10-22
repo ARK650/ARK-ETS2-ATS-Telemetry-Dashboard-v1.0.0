@@ -1,0 +1,37 @@
+{
+  "name": "ark-dash",
+  "version": "1.0.0",
+  "description": "Professional real-time telemetry dashboard for Euro Truck Simulator 2 and American Truck Simulator with WebSocket support",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ets2",
+    "american-truck-simulator",
+    "telemetry",
+    "dashboard",
+    "trucksim",
+    "websocket",
+    "real-time",
+    "funbit",
+    "scs-sdk"
+  ],
+  "author": "ARK650 <cark98@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ARK650/ark-ets2-dashboard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ARK650/ark-ets2-dashboard/issues"
+  },
+  "homepage": "https://github.com/ARK650/ark-ets2-dashboard#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
