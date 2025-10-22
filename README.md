@@ -22,18 +22,14 @@ A professional, automotive-style telemetry dashboard for Euro Truck Simulator 2 
 ### 🚦 Real-time Telemetry Display
 
 - **10 Warning Lights Grid**
-  - 🅿️ Parking Brake (air brake style indicator)
-  - ⛽ Low Fuel (fuel pump icon)
-  - 🛢️ Oil Pressure (oil can icon)
-  - 🔋 Battery/Charging (battery icon)
-  - 💡 High Beam (headlight icon)
+  - 🅿️ Parking Brake 
+  - ⛽ Low Fuel 
   - 🛑 ABS (brake disc with caliper - custom simulation logic)
   - 🔄 TCS/Traction Control (wheel with slip marks - custom simulation)
   - 🔵 Engine Brake/Retarder (engine block with EB marking)
   - 🚛 Trailer Brake (trailer with emphasized brakes)
   - 🚨 Rotating Beacon (dome light with beams)
   - 🔒 Differential Lock (axle with lock icon)
-  - ⚠️ Check Engine (wrench icon)
 
 - **Live Input Monitoring**
   - Throttle bar (green gradient with pulse/shine animations)
@@ -43,7 +39,7 @@ A professional, automotive-style telemetry dashboard for Euro Truck Simulator 2 
 
 - **Steering Wheel Display**
   - Visual rotation indicator (±90° semicircle rotation)
-  - Angle display in degrees (LEFT 45° / RIGHT 30° / CENTER)
+  - Angle display in degrees (LEFT 45° / RIGHT 45° / CENTER)
   - Motion blur effect for smooth, realistic movement
   - Sequential turn signals (6 segments per side + triangular arrows, animated)
   - Hazard light synchronization (both sides blink together)
