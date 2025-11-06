@@ -12,7 +12,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -36,7 +36,7 @@
         
         body {
             background: linear-gradient(135deg, #0a0a0a 0%, #141414 50%, #0f0f0f 100%);
-            font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             color: #fff;
             overflow: hidden;
             height: 100vh;
@@ -302,7 +302,40 @@
             transition: color 0.3s ease;
         }
         
-        /* High RPM (85-95%): Solid Red */
+        /* Green zone (1000-1500 RPM): Green */
+        .warning-light.gear-display.green-zone {
+            background: linear-gradient(145deg, #00ff00, #00cc00);
+            border-color: #00ff33;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5), 0 0 25px rgba(0, 255, 0, 0.2), inset 0 0 15px rgba(0, 255, 0, 0.2);
+        }
+        
+        .warning-light.gear-display.green-zone svg {
+            color: #ffffff;
+        }
+        
+        /* Yellow zone (1500-1750 RPM): Yellow */
+        .warning-light.gear-display.yellow-zone {
+            background: linear-gradient(145deg, #ffff00, #cccc00);
+            border-color: #ffff33;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.5), 0 0 25px rgba(255, 255, 0, 0.2), inset 0 0 15px rgba(255, 255, 0, 0.2);
+        }
+        
+        .warning-light.gear-display.yellow-zone svg {
+            color: #000000;
+        }
+        
+        /* Orange zone (1750-2000 RPM): Orange */
+        .warning-light.gear-display.orange-zone {
+            background: linear-gradient(145deg, #ff8800, #cc6600);
+            border-color: #ffaa33;
+            box-shadow: 0 0 15px rgba(255, 136, 0, 0.5), 0 0 25px rgba(255, 136, 0, 0.2), inset 0 0 15px rgba(255, 136, 0, 0.2);
+        }
+        
+        .warning-light.gear-display.orange-zone svg {
+            color: #ffffff;
+        }
+        
+        /* High RPM (2000-2500 RPM): Solid Red */
         .warning-light.gear-display.shift-light {
             background: linear-gradient(145deg, #ff0000, #cc0000);
             border-color: #ff3300;
@@ -313,12 +346,12 @@
             color: #ffffff;
         }
         
-        /* Redline (>95%): Flashing Red */
+        /* Redline (>2500 RPM): Flashing Red */
         .warning-light.gear-display.redline {
             background: linear-gradient(145deg, #ff0000, #cc0000);
             border-color: #ff3300;
             box-shadow: 0 0 20px rgba(255, 0, 0, 0.7), 0 0 35px rgba(255, 0, 0, 0.3), inset 0 0 20px rgba(255, 0, 0, 0.3);
-            animation: redline-flash 0.6s ease-in-out infinite; /* Slowed from 0.3s to 0.6s */
+            animation: redline-flash 0.6s ease-in-out infinite;
         }
         
         .warning-light.gear-display.redline svg {
@@ -610,7 +643,7 @@
         .steering-angle {
             font-size: 28px;
             font-weight: 700;
-            font-family: 'Orbitron', monospace;
+            font-family: 'Roboto Mono', monospace;
             color: #00d4ff;
             text-shadow: 0 0 10px rgba(0, 212, 255, 0.5), 0 2px 4px rgba(0, 0, 0, 0.5);
             margin-top: 8px;
@@ -1166,7 +1199,7 @@
             
             <div class="warning-light gear-display" id="gear-display">
                 <svg viewBox="0 0 24 24" fill="currentColor">
-                    <text x="12" y="16" font-size="15" font-weight="900" text-anchor="middle" fill="currentColor" font-family="Orbitron, monospace" id="gear-text">N</text>
+                    <text x="12" y="16" font-size="15" font-weight="900" text-anchor="middle" fill="currentColor" font-family="Roboto Mono, monospace" id="gear-text">N</text>
                 </svg>
                 <div class="warning-label">Gear</div>
             </div>
@@ -1513,7 +1546,6 @@
             const gear = data.truck?.displayedGear || 0;
             const rpm = data.truck?.engineRpm || 0;
             const maxRpm = data.truck?.engineRpmMax || 1;
-            const rpmPercentage = (rpm / maxRpm) * 100;
             
             let gearText = 'N';
             if (gear < 0) {
@@ -1523,26 +1555,38 @@
             }
             document.getElementById('gear-text').textContent = gearText;
             
-            // Progressive shift light logic for trucks:
-            // 92-97% RPM: Solid Red (approaching redline)
-            // >97% RPM: Flashing Red (at redline - shift NOW!)
+            // Progressive shift light logic based on actual RPM values:
+            // < 1000 RPM: Cyan (normal)
+            // 1000-1500 RPM: Green
+            // 1500-1750 RPM: Yellow
+            // 1750-2000 RPM: Orange
+            // 2000-2500 RPM: Solid Red (shift soon)
+            // > 2500 RPM: Flashing Red (SHIFT NOW!)
             const gearDisplay = document.getElementById('gear-display');
             if (gear > 0) {
-                if (rpmPercentage > 97) {
+                // Remove all color classes first
+                gearDisplay.classList.remove('green-zone', 'yellow-zone', 'orange-zone', 'shift-light', 'redline');
+                
+                if (rpm > 2500) {
                     // Redline: Flashing red
-                    gearDisplay.classList.remove('shift-light');
                     gearDisplay.classList.add('redline');
-                } else if (rpmPercentage > 92) {
+                } else if (rpm > 2000) {
                     // High RPM: Solid red
                     gearDisplay.classList.add('shift-light');
-                    gearDisplay.classList.remove('redline');
-                } else {
-                    // Normal: Cyan
-                    gearDisplay.classList.remove('shift-light', 'redline');
+                } else if (rpm > 1750) {
+                    // Orange zone
+                    gearDisplay.classList.add('orange-zone');
+                } else if (rpm > 1500) {
+                    // Yellow zone
+                    gearDisplay.classList.add('yellow-zone');
+                } else if (rpm > 1000) {
+                    // Green zone
+                    gearDisplay.classList.add('green-zone');
                 }
+                // Below 1000 RPM stays cyan (no class added)
             } else {
                 // Neutral or Reverse: Always cyan
-                gearDisplay.classList.remove('shift-light', 'redline');
+                gearDisplay.classList.remove('green-zone', 'yellow-zone', 'orange-zone', 'shift-light', 'redline');
             }
             
             // Job Information
